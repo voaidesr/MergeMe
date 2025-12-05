@@ -4,7 +4,7 @@ import sys
 import requests
 from dotenv import load_dotenv
 from api_client import ApiClient
-from src.app import App
+from app import App
 from utils import HourRequestDto
 import json
 
