@@ -43,26 +43,3 @@ class ApiClient:
         response.raise_for_status()
         print("Session ended.")
         return response.json()
-
-if __name__ == '__main__':
-    BASE_URL = "http://127.0.0.1:8080"
-    API_KEY = "38287-aed3-4556-9328-329188b39a7a"
-
-    client = ApiClient(base_url=BASE_URL, api_key=API_KEY)
-
-    try:
-        client.start_session()
-
-        hour_request = HourRequestDto(day=0, hour=0)
-
-        response = client.play_round(hour_request)
-        print("Play round response:", response)
-
-    except requests.exceptions.HTTPError as e:
-        print(f"HTTP Error: {e.response.status_code} {e.response.reason}")
-        print(e.response.json())
-    except Exception as e:
-        print(f"An error occurred: {e}")
-    finally:
-        if client.session_id:
-            client.end_session()
