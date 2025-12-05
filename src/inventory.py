@@ -5,7 +5,6 @@ from models import Airport
 
 CLASS_KEYS = ("first", "business", "premiumEconomy", "economy")
 
-
 @dataclass
 class InventoryViolation:
     negative: int = 0
