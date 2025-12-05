@@ -1,20 +1,23 @@
-from models import *
-import pandas as pd
+import os
 import requests
 from typing import Optional, Dict
 from parser import Parser
-import os
 from dotenv import load_dotenv
 from api_client import ApiClient
 from utils import HourRequestDto, decode_time, encode_time
-import json
+from models import *
+from inventory import InventoryManager
+
+
+DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
+
 
 @dataclass
 class App:
     aircraft_dict: Dict[str, Aircraft] = field(default_factory=dict)
     airport_dict: Dict[str, Airport] = field(default_factory=dict)
-    
     flights_dict: Dict[str, Flight] = field(default_factory=dict)
+    inventory_manager: Optional[InventoryManager] = None
 
     def connect_api(self):
         load_dotenv()
@@ -37,6 +40,12 @@ class App:
         
         self.aircraft_dict = parser.parse_aircraft('../data/aircraft_types.csv')
         self.airport_dict = parser.parse_airports('../data/airports_with_stocks.csv')
+
+        self.inventory_manager = InventoryManager.from_airports(self.airport_dict)
+
+        if self.inventory_manager:
+            print("Initial inventories: ")
+            print(self.inventory_manager.snapshot())
 
         #print(self.aircraft_dict)
         #print(self.airport_dict)
@@ -95,13 +104,11 @@ class App:
                 
                 # Store the new flight
                 self.flights_dict[new_flight.flight_id] = new_flight
-            
-        
 
     def run(self):  
         try:
             self.client.start_session()
-            stop_time, curr_time = 8, 0
+            stop_time, curr_time = 1, 0
             
             while curr_time < stop_time:
                 day, hour = decode_time(curr_time)
@@ -127,9 +134,4 @@ class App:
             print(f"HTTP Error: {e.response.status_code} {e.response.reason}")
             print(e.response.json())
         except Exception as e:
-            print(f"An error occurred: {e}")
-        finally:
-            if self.client.session_id:
-                self.client.end_session()
-        
-        
+            print(f"Error parsing airports: {e}")
