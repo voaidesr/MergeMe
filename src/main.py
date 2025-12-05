@@ -19,22 +19,3 @@ if __name__ == "__main__":
 
     app = App()
     app.initialize()
-
-    # play with the api
-    client = ApiClient(base_url=BASE_URL, api_key=API_KEY)
-
-    try:
-        client.start_session()
-        hour_request = HourRequestDto(day=0, hour=0)
-        response = client.play_round(hour_request)
-        print(response)
-
-
-    except requests.exceptions.HTTPError as e:
-        print(f"HTTP Error: {e.response.status_code} {e.response.reason}")
-        print(e.response.json())
-    except Exception as e:
-        print(f"An error occurred: {e}")
-    finally:
-        if client.session_id:
-            client.end_session()
