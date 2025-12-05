@@ -1,7 +1,13 @@
 
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import List, Optional, Tuple
 import uuid
+
+def encode_time(days: int, hours: int) -> int:
+    return days * 24 + hours
+
+def decode_time(time: int) -> Tuple[int, int]:
+    return (time // 24, time % 24)
 
 @dataclass
 class PerClassAmount:
@@ -45,4 +51,5 @@ class HourRequestDto:
         if self.kit_purchasing_orders:
             data["kitPurchasingOrders"] = self.kit_purchasing_orders.to_dict()
         return data
+
 
