@@ -1,6 +1,11 @@
-from models import *
-import pandas as pd
+import os
 from typing import Optional, Dict
+
+import pandas as pd
+from models import *
+
+
+DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
 
 
 @dataclass
@@ -13,7 +18,8 @@ class App:
         Parses aircraft_types.csv using pandas and populates aircraft_dict.
         """
         try:
-            df = pd.read_csv(path, sep=';')
+            csv_path = os.path.abspath(path)
+            df = pd.read_csv(csv_path, sep=';')
 
             for _, row in df.iterrows():
                 aircraft = Aircraft(
@@ -34,7 +40,7 @@ class App:
             print(f"Loaded {len(self.aircraft_dict)} aircraft types.")
 
         except FileNotFoundError:
-            print(f"Error: Aircraft file not found at {path}")
+            print(f"Error: Aircraft file not found at {csv_path}")
         except Exception as e:
             print(f"Error parsing aircraft: {e}")
 
@@ -43,7 +49,8 @@ class App:
         Parses airports_with_stocks.csv using pandas and populates airport_dict.
         """
         try:
-            df = pd.read_csv(path, sep=';')
+            csv_path = os.path.abspath(path)
+            df = pd.read_csv(csv_path, sep=';')
 
             for _, row in df.iterrows():
                 # Mapping CSV columns to dataclass fields
@@ -85,14 +92,17 @@ class App:
             print(f"Loaded {len(self.airport_dict)} airports.")
 
         except FileNotFoundError:
-            print(f"Error: Airport file not found at {path}")
+            print(f"Error: Airport file not found at {csv_path}")
         except Exception as e:
             print(f"Error parsing airports: {e}")
 
     def initialize(self):
         # Example of how you might use the parse methods
-        self.parse_aircraft('../data/aircraft_types.csv')
-        self.parse_airports('../data/airports_with_stocks.csv')
+        aircraft_csv = os.path.join(DATA_DIR, "aircraft_types.csv")
+        airports_csv = os.path.join(DATA_DIR, "airports_with_stocks.csv")
+
+        self.parse_aircraft(aircraft_csv)
+        self.parse_airports(airports_csv)
 
         print(self.aircraft_dict)
         print(self.airport_dict)
