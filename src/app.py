@@ -3,6 +3,7 @@ from typing import Optional, Dict
 
 import pandas as pd
 from models import *
+from inventory import InventoryManager
 
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
@@ -12,6 +13,7 @@ DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__
 class App:
     aircraft_dict: Dict[str, Aircraft] = field(default_factory=dict)
     airport_dict: Dict[str, Airport] = field(default_factory=dict)
+    inventory_manager: Optional[InventoryManager] = None
 
     def parse_aircraft(self, path: str) -> None:
         """
@@ -103,6 +105,10 @@ class App:
 
         self.parse_aircraft(aircraft_csv)
         self.parse_airports(airports_csv)
+        self.inventory_manager = InventoryManager.from_airports(self.airport_dict)
 
         print(self.aircraft_dict)
         print(self.airport_dict)
+        if self.inventory_manager:
+            print("Initial inventories:")
+            print(self.inventory_manager.snapshot())
