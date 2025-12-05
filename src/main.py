@@ -1,8 +1,12 @@
 import os
+import sys
+
 import requests
 from dotenv import load_dotenv
 from api_client import ApiClient
+from src.app import App
 from utils import HourRequestDto
+import json
 
 if __name__ == "__main__":
     # here you setup the environment variables
@@ -13,16 +17,18 @@ if __name__ == "__main__":
     if not API_KEY:
         raise ValueError("API_KEY not found in .env file or environment variables.")
 
+    app = App()
+    app.initialize()
+
     # play with the api
     client = ApiClient(base_url=BASE_URL, api_key=API_KEY)
 
     try:
         client.start_session()
-
         hour_request = HourRequestDto(day=0, hour=0)
-
         response = client.play_round(hour_request)
-        print("Play round response:", response)
+        print(response)
+
 
     except requests.exceptions.HTTPError as e:
         print(f"HTTP Error: {e.response.status_code} {e.response.reason}")

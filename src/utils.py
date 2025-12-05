@@ -45,3 +45,4 @@ class HourRequestDto:
         if self.kit_purchasing_orders:
             data["kitPurchasingOrders"] = self.kit_purchasing_orders.to_dict()
         return data
+
