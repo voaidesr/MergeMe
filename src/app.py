@@ -132,7 +132,7 @@ class App:
                     departure=departure_time,
                     arrival=arrival_time,
                     passengers=flight_entry["passengers"],
-                    aircraft_id = aircraft_id # Link to the aircraft ID
+                    aircraft_id = aircraft_id, # Link to the aircraft ID
                 )
 
                 # Store the new flight
