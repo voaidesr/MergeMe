@@ -1,7 +1,6 @@
 
 from dataclasses import dataclass, field
 from typing import List, Optional, Tuple
-import uuid
 
 def encode_time(days: int, hours: int) -> int:
     return days * 24 + hours
@@ -26,7 +25,7 @@ class PerClassAmount:
 
 @dataclass
 class FlightLoadDto:
-    flight_id: uuid.UUID
+    flight_id: str
     loaded_kits: PerClassAmount
 
     def to_dict(self):
@@ -51,5 +50,7 @@ class HourRequestDto:
         if self.kit_purchasing_orders:
             data["kitPurchasingOrders"] = self.kit_purchasing_orders.to_dict()
         return data
+
+
 
 

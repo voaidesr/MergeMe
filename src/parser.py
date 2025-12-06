@@ -89,3 +89,44 @@ class Parser:
         except Exception as e:
             print(f"Error parsing airports: {e}")
         return airport_dict
+
+
+    def parse_scheduled_flights(self, path: str) -> Dict[str, List[PlannedFlight]]:
+        """
+        Parses flight_plan.csv and returns a dictionary mapping depart_code to a list of PlannedFlight objects.
+        """
+        flights_by_origin = {}
+
+        try:
+            df = pd.read_csv(path, sep=';')
+
+            day_columns = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+
+            for _, row in df.iterrows():
+                active_days = [i for i, day in enumerate(day_columns) if row[day] == 1]
+
+                flight = PlannedFlight(
+                    depart_code=row['depart_code'],
+                    arrival_code=row['arrival_code'],
+
+                    scheduled_depart=int(row['scheduled_hour']),
+                    scheduled_arrival=int(row['scheduled_arrival_hour']),
+
+                    distance=int(row['distance_km']),
+                    flight_days=active_days
+                )
+
+                origin = flight.depart_code
+                if origin not in flights_by_origin:
+                    flights_by_origin[origin] = []
+
+                flights_by_origin[origin].append(flight)
+
+            print(f"Loaded planned flights for {len(flights_by_origin)} airports.")
+
+        except FileNotFoundError:
+            print(f"Error: Flight plan file not found at {path}")
+        except Exception as e:
+            print(f"Error parsing flight plan: {e}")
+
+        return flights_by_origin
