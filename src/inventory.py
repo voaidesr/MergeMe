@@ -53,6 +53,7 @@ class InventoryRecord:
 
 @dataclass
 class InventoryManager:
+    # airport inventory, key is airport id
     inventories: Dict[str, InventoryRecord] = field(default_factory=dict)
 
     @classmethod

@@ -40,18 +40,27 @@ class App:
         try:
             self.client.start_session()
             
-            end_time = 24*5
+            end_time = 30*24
+            lastCost = -1
             # main loop for every hour
             while self.state.time < end_time:
                 # 1. make a descision
-                decision = self.decisionMaker.make_decision(self.state)
+                # decision = self.decisionMaker.empty_decision(self.state)
+                decision = self.decisionMaker.naive_decision(self.state)
+                
+                # print(decision)
                 
                 # 2. send the decision and get the next round
                 response = self.client.play_round(decision)
+                lastCost = response['totalCost']
+                
+                for idx, penalty in enumerate(response['penalties']):
+                    print(idx, penalty['reason'])
 
                 # 3. update the state with the next round
                 self.state.update_state(response)
-                
+
+            print(f'Last Cost: {lastCost:,.2f}')
         except requests.exceptions.HTTPError as e:
             print(f"HTTP Error: {e.response.status_code} {e.response.reason}")
             print(e.response.json())
