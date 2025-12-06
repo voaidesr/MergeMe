@@ -18,7 +18,7 @@ class DecisionMaker:
         day, hour = decode_time(state.time)
         return HourRequestDto(day, hour)
 
-    
+
     def make_decision_petru(self, state: State) -> HourRequestDto:
         loads = []
         for flight in state.flights_dict.values():
@@ -42,7 +42,7 @@ class DecisionMaker:
                     current = getattr(airport, stock_attr)
                     capacity = getattr(aircraft, capacity_attr)
 
-                    
+
                     # bias = 30
                     use = max(0, min(capacity, current, wanted * (1-BIAS[cls])))
                     # use = max(0, min(capacity, wanted))
@@ -73,7 +73,7 @@ class DecisionMaker:
         day, hour = decode_time(state.time)
         resp = HourRequestDto(day, hour)
         resp.flight_loads = loads
-        
+
         if state.time < 5 * 24 == 0:
             # print('Buying')
             pca = PerClassAmount()
@@ -82,7 +82,7 @@ class DecisionMaker:
             pca.business = 18
             pca.first = 6
             resp.kit_purchasing_orders = pca
-            
+
             for cls, attr_name in PCA_FIELDS.items():
                 quantity = getattr(pca, attr_name)  # correctly uses 'premium_economy'
                 state.inventory.insert_buying(
@@ -91,9 +91,9 @@ class DecisionMaker:
                     cls,
                     'HUB1'
                 )
-            resp.kit_purchasing_orders = pca    
-            
-            
+            resp.kit_purchasing_orders = pca
+
+
         return resp
 
     """
@@ -182,8 +182,8 @@ class DecisionMaker:
         resp.kit_purchasing_orders = fixed_purchase
 
         return resp
-    
-    
+
+
     """
 
     """
