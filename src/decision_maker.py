@@ -98,12 +98,19 @@ class DecisionMaker:
     
     def naive_decision(self, state: State) -> HourRequestDto:
         loads = []
-
+        
+        pca_purchase = PerClassAmount()
+        pca_purchase.first = 1
+        pca_purchase.business = 20
+        pca_purchase.premium_economy = 30
+        pca_purchase.economy = 40
+        
         for fid in state.flights_dict:
             flight = state.flights_dict[fid]
 
             if flight.status == FlightStatus.CHECKED_IN:
                 pca = PerClassAmount()
+                
                 origin = flight.origin_airport_id
 
                 invent_obj = state.inventory_manager.inventories[origin]
@@ -117,27 +124,37 @@ class DecisionMaker:
                     match cls:
                         case "first":
                             pca.first = use
+                            
                         case "business":
                             pca.business = use
+                            
                         case "premiumEconomy":
                             pca.premium_economy = use
+                            
                         case "economy":
                             pca.economy = use
+                            
 
                     invent_obj.available[cls] -= use
 
                 loads.append(FlightLoadDto(flight.flight_id, pca))
+                
 
             elif flight.status == FlightStatus.LANDED:
                 continue
 
             else:
                 continue
-
+        
         # Moved OUTSIDE the loop
         day, hour = decode_time(state.time)
         resp = HourRequestDto(day, hour)
         resp.flight_loads = loads
+        
+        if state.time % (7*24) == 0:
+            resp.kit_purchasing_orders = pca_purchase
+        
+        
         return resp
 
                 

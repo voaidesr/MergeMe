@@ -46,8 +46,8 @@ class App:
             while self.state.time < end_time:
                 # 1. make a descision
                 # decision = self.decisionMaker.empty_decision(self.state)
-                decision = self.decisionMaker.make_decision(self.state)
-
+                decision = self.decisionMaker.naive_decision(self.state)
+                
                 # print(decision)
                 
                 penalty_no = 0
