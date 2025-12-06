@@ -40,8 +40,6 @@ class Flight:
     departure: int
     arrival: int
 
-    distance_km: int
-
     # keys: first, business, premiumEconomy, economy
     passengers: dict[str, int]
 
