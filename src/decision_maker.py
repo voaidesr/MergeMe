@@ -61,7 +61,7 @@ class DecisionMaker:
                 demand = passengers.get(cls, 0)
                 cap = caps.get(cls, 0)
                 available = inv_record.available.get(cls, 0)
-                print(cls, available)
+                print(cls, flight.aircraft_id, available)
                 load = max(0, min(demand, cap, available))
                 if load > 0:
                     load_amounts[cls] = load
