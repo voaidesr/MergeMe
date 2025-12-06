@@ -6,17 +6,6 @@ from models import *
 from utils import encode_time, decode_time, CLASS_KEYS
 from state import State
 
-
-# get the capacities for each aircraft for each class
-def _class_caps(aircraft) -> Dict[str, int]:
-    return {
-        "first": getattr(aircraft, "first_class_kits_capacity", 0),
-        "business": getattr(aircraft, "business_kits_capacity", 0),
-        "premiumEconomy": getattr(aircraft, "premium_economy_kits_capacity", 0),
-        "economy": getattr(aircraft, "economy_kits_capacity", 0),
-    }
-
-
 @dataclass
 class DecisionMaker:
     context: Context
@@ -33,76 +22,80 @@ class DecisionMaker:
     def make_decision(self, state: State) -> HourRequestDto:
         loads = []
 
-        for fid in state.flights_dict:
-            flight = state.flights_dict[fid]
+        # Maps class keys → attribute names for each object involved
+        STOCK_FIELDS = {
+            "first": "first_stock",
+            "business": "business_stock",
+            "premiumEconomy": "premium_economy_stock",
+            "economy": "economy_stock",
+        }
 
+        CAPACITY_FIELDS = {
+            "first": "first_class_kits_capacity",
+            "business": "business_kits_capacity",
+            "premiumEconomy": "premium_economy_kits_capacity",
+            "economy": "economy_kits_capacity",
+        }
+
+        PCA_FIELDS = {
+            "first": "first",
+            "business": "business",
+            "premiumEconomy": "premium_economy",
+            "economy": "economy",
+        }
+
+        for flight in state.flights_dict.values():
             if flight.status == FlightStatus.CHECKED_IN:
                 if flight.load:
                     continue
-                pca = PerClassAmount()
 
+                pca = PerClassAmount()
+                origin_id = flight.origin_airport_id
+                aircraft_id = flight.aircraft_id
+                airport = self.context.airport_dict[origin_id]
+                aircraft = self.context.aircraft_dict[aircraft_id]
 
                 for cls in CLASS_KEYS:
                     wanted = flight.passengers[cls]
 
-                    # TODO: implement formula to calculate how many kits to load
-                    #available = invent_obj.available[cls]
-                    #use = max(0, min(wanted, current, capacity))
+                    stock_attr = STOCK_FIELDS[cls]
+                    capacity_attr = CAPACITY_FIELDS[cls]
+                    pca_attr = PCA_FIELDS[cls]
 
-                    origin_id = flight.origin_airport_id
-                    aircraft_id = flight.aircraft_id
-                    aicraft_capacity = self.context.aircraft_dict[aircraft_id]
-                    match cls:
-                        case "first":
-                            current = self.context.airport_dict[origin_id].first_stock
-                            capacity = aicraft_capacity.first_class_kits_capacity
-                            use = max(0, min(capacity, current, wanted))
-                            pca.first = use
-                            self.context.airport_dict[origin_id].first_stock -= use
+                    current = getattr(airport, stock_attr)
+                    capacity = getattr(aircraft, capacity_attr)
 
-                        case "business":
-                            current = self.context.airport_dict[origin_id].business_stock
-                            capacity = aicraft_capacity.business_kits_capacity
-                            use = max(0, min(capacity, current, wanted))
-                            pca.business = use
-                            self.context.airport_dict[origin_id].business_stock -= use
+                    use = max(0, min(capacity, current, wanted))
 
-                        case "premiumEconomy":
-                            current = self.context.airport_dict[origin_id].premium_economy_stock
-                            capacity = aicraft_capacity.premium_economy_kits_capacity
-                            use = max(0, min(capacity, current, wanted))
-                            pca.premium_economy = use
-                            self.context.airport_dict[origin_id].premium_economy_stock -= use
-
-                        case "economy":
-                            current = self.context.airport_dict[origin_id].economy_stock
-                            capacity = aicraft_capacity.economy_kits_capacity
-                            use = max(0, min(capacity, current, wanted))
-                            pca.economy = use
-                            self.context.airport_dict[origin_id].economy_stock -= use
+                    setattr(pca, pca_attr, use)
+                    setattr(airport, stock_attr, current - use)
 
                     flight.load[cls] = use
-
                 loads.append(FlightLoadDto(flight.flight_id, pca))
 
             elif flight.status == FlightStatus.LANDED:
                 if not flight.load:
                     continue
                 for cls in CLASS_KEYS:
-                    state.inventory.insert_future(state.time, flight.load[cls], cls, flight.destination_airport_id)
-
+                    state.inventory.insert_future(
+                        state.time,
+                        flight.load[cls],
+                        cls,
+                        flight.destination_airport_id
+                    )
                 flight.load = {}
 
             elif flight.status == FlightStatus.SCHEDULED:
                 continue
 
-        # TODO: buy order logic
-
         day, hour = decode_time(state.time)
         resp = HourRequestDto(day, hour)
         resp.flight_loads = loads
-
         return resp
+
+    
+    
+    
     """
     def naive_decision(self, state: State) -> HourRequestDto:
         loads = []
