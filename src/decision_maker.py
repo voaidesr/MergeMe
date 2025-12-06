@@ -35,17 +35,36 @@ class DecisionMaker:
                         case 'first':
                             #pca.first = 0
                             if cnt > invent_obj.available['first']:
+                                pca.first = max(0, invent_obj.available['first'])
+                                invent_obj.available['first'] -= pca.first
+                            else:
+                                pca.first = cnt
+                                invent_obj.available['first'] -= cnt
                                 
-                            pca.first = max(0, invent_obj.available['first'])
                         case 'business':
                             #pca.business = 0
-                            pca.business = max(0, invent_obj.available['first'])
+                            if cnt > invent_obj.available['business']:
+                                pca.business = max(0, invent_obj.available['business'])
+                                invent_obj.available['business'] -= pca.business
+                            else:
+                                pca.business = cnt
+                                invent_obj.available['business'] -= cnt
                         case 'premiumEconomy':
-                            pca.premium_economy = 0
-                            #pca.premium_economy = max(0, invent_obj.available['first'])
+                            #pca.premium_economy = 0
+                            if cnt > invent_obj.available['premiumEconomy']:
+                                pca.premium_economy = max(0, invent_obj.available['premiumEconomy'])
+                                invent_obj.available['premiumEconomy'] -= pca.premium_economy
+                            else:
+                                pca.premium_economy = cnt
+                                invent_obj.available['premiumEconomy'] -= cnt
                         case 'economy':
-                            pca.economy = 0
-                            #pca.economy  = max(0, invent_obj.available['first'])
+                            # pca.economy = 0
+                            if cnt > invent_obj.available['economy']:
+                                pca.economy = max(0, invent_obj.available['economy'])
+                                invent_obj.available['economy'] -= pca.economy
+                            else:
+                                pca.economy = cnt
+                                invent_obj.available['economy'] -= cnt
                             
                 fldto = FlightLoadDto(flight.flight_id, pca)
                 loads.append(fldto)

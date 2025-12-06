@@ -46,26 +46,39 @@ class App:
             while self.state.time < end_time:
                 # 1. make a descision
                 # decision = self.decisionMaker.empty_decision(self.state)
-                decision = self.decisionMaker.naive_decision(self.state)
+                decision = self.decisionMaker.empty_decision(self.state)
                 
                 # print(decision)
                 
+                penalty_no = 0
                 # 2. send the decision and get the next round
                 response = self.client.play_round(decision)
                 lastCost = response['totalCost']
                 
+                penal = {}
                 for idx, penalty in enumerate(response['penalties']):
-                    print(idx, penalty['reason'])
+                    keywords = {'negative', 'unfulfilled'}
+                    
+                    for keyword in keywords:
+                        if penalty['reason'].find(keyword) != -1:  
+                            if keyword not in penal:
+                                penal[keyword] = 0
+                            penal[keyword] += 1
+                    
+                    penalty_no += 1
+                    #print(idx, penalty['reason'])
 
                 # 3. update the state with the next round
                 self.state.update_state(response)
 
             print(f'Last Cost: {lastCost:,.2f}')
+            print(penal)
+            print(penalty_no)
         except requests.exceptions.HTTPError as e:
             print(f"HTTP Error: {e.response.status_code} {e.response.reason}")
             print(e.response.json())
         except Exception as e:
-            print(f"Error parsing airports: {e}")
+            print(f"Exception: {e}")
         finally:
             MAX_END_TIME= 24*30
             if self.state.time < MAX_END_TIME:
