@@ -33,7 +33,7 @@ class Aircraft:
 @dataclass
 class Flight:
     status: FlightStatus
-
+    
     flight_number: str
     flight_id: str
 
@@ -48,9 +48,12 @@ class Flight:
     passengers: dict[str, int]
 
     aircraft_id: str
+    
+    distance: int
 
     load: dict[str, int] = field(default_factory=dict)
 
+    
 
 @dataclass
 class PlannedFlight:
