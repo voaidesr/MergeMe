@@ -173,4 +173,5 @@ class App:
         except Exception as e:
             print(f"Error parsing airports: {e}")
         finally:
-            self.client.end_session()
+            if stop_time != 24 * 30:
+                self.client.end_session()
