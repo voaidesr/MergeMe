@@ -45,26 +45,26 @@ class App:
             # main loop for every hour
             while self.state.time < end_time:
                 # 1. make a descision
-                # decision = self.decisionMaker.empty_decision(self.state)
-                decision = self.decisionMaker.naive_decision(self.state)
-                
+                decision = self.decisionMaker.empty_decision(self.state)
+                # decision = self.decisionMaker.naive_decision(self.state)
+
                 # print(decision)
-                
+
                 penalty_no = 0
                 # 2. send the decision and get the next round
                 response = self.client.play_round(decision)
                 lastCost = response['totalCost']
-                
+
                 penal = {}
                 for idx, penalty in enumerate(response['penalties']):
                     keywords = {'negative', 'unfulfilled'}
-                    
+
                     for keyword in keywords:
-                        if penalty['reason'].find(keyword) != -1:  
+                        if penalty['reason'].find(keyword) != -1:
                             if keyword not in penal:
                                 penal[keyword] = 0
                             penal[keyword] += 1
-                    
+
                     penalty_no += 1
                     #print(idx, penalty['reason'])
 
