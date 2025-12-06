@@ -21,6 +21,7 @@ class Context:
     airport_dict: Dict[str, Airport] = field(default_factory=dict) # key is airport_id
     planned_flights_dict: Dict[str, PlannedFlight] = field(default_factory=dict) # key is airport name
     
+    
     def __post_init__(self):
         # parse and get initial data from the csv's
         parser = Parser()

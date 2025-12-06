@@ -21,11 +21,12 @@ class State:
     flights_dict: Dict[str, Flight] = field(default_factory=dict)
     time: int = 0
     
-    inventory_manager: Optional[InventoryManager] = None
-    processing_queue: Optional[KitProcessingQueue] = None
+    inventory_manager: InventoryManager = field(default_factory=InventoryManager)
+    processing_queue: KitProcessingQueue = field(default_factory=KitProcessingQueue)    
     
     def __post_init__(self):
         self.inventory_manager = InventoryManager.from_airports(self.context.airport_dict)
+        
         
     def complete_processing_tick(self) -> None:
         """
@@ -111,6 +112,9 @@ class State:
 
                 # Store the new flight
                 self.flights_dict[new_flight.flight_id] = new_flight
+    
+    def get_penalties(self, response):
+        return response['penalties']
     
     def update_state(self, response: dict):
         # update based on response

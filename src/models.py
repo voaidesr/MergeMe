@@ -1,7 +1,9 @@
 from dataclasses import dataclass, field
 from typing import List, Optional
-import uuid
 from enum import Enum
+
+CLASSES = ['first', 'business', 'premiumEconomy', 'economy']
+
 
 class FlightStatus(Enum):
     SCHEDULED = 1
