@@ -89,3 +89,4 @@ class Parser:
         except Exception as e:
             print(f"Error parsing airports: {e}")
         return airport_dict
+    
