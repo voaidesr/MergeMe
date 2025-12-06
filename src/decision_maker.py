@@ -3,7 +3,7 @@ from typing import Dict
 
 from context import Context
 from models import *
-from utils import encode_time, decode_time, CLASS_KEYS
+from utils import *
 from state import State
 
 @dataclass
@@ -19,7 +19,85 @@ class DecisionMaker:
         return HourRequestDto(day, hour)
 
     #TODO
-    def make_decision(self, state: State) -> HourRequestDto:
+    
+    def make_decision_petru(self, state: State) -> HourRequestDto:
+        loads = []
+        for flight in state.flights_dict.values():
+            if flight.status == FlightStatus.CHECKED_IN:
+                if flight.load:
+                    continue
+
+                pca = PerClassAmount()
+                origin_id = flight.origin_airport_id
+                aircraft_id = flight.aircraft_id
+                airport = self.context.airport_dict[origin_id]
+                aircraft = self.context.aircraft_dict[aircraft_id]
+
+                for cls in CLASS_KEYS:
+                    wanted = flight.passengers[cls]
+
+                    stock_attr = STOCK_FIELDS[cls]
+                    capacity_attr = CAPACITY_FIELDS[cls]
+                    pca_attr = PCA_FIELDS[cls]
+
+                    current = getattr(airport, stock_attr)
+                    capacity = getattr(aircraft, capacity_attr)
+
+                    
+                    # bias = 30
+                    use = max(0, min(capacity, current, wanted * (1-BIAS[cls])))
+                    # use = max(0, min(capacity, wanted))
+                    # use = 0
+
+                    setattr(pca, pca_attr, use)
+                    setattr(airport, stock_attr, current - use)
+
+                    flight.load[cls] = use
+                loads.append(FlightLoadDto(flight.flight_id, pca))
+
+            elif flight.status == FlightStatus.LANDED:
+                if not flight.load:
+                    continue
+                for cls in CLASS_KEYS:
+                    state.inventory.insert_processing(
+                        state.time,
+                        flight.load[cls],
+                        cls,
+                        flight.destination_airport_id
+                    )
+                flight.load = {}
+
+            elif flight.status == FlightStatus.SCHEDULED:
+                continue
+
+        # send stuff
+        day, hour = decode_time(state.time)
+        resp = HourRequestDto(day, hour)
+        resp.flight_loads = loads
+        
+        if state.time % 2 == 0:
+            # print('Buying')
+            pca = PerClassAmount()
+            pca.economy = 30
+            pca.business = 17
+            pca.first = 2
+            pca.premium_economy = 10
+            resp.kit_purchasing_orders = pca
+            
+            for cls, attr_name in PCA_FIELDS.items():
+                quantity = getattr(pca, attr_name)  # correctly uses 'premium_economy'
+                state.inventory.insert_buying(
+                    state.time,
+                    quantity,
+                    cls,
+                    'HUB1'
+                )
+        return resp
+    
+    
+    
+    """
+    def make_decision_floron(self, state: State) -> HourRequestDto:
         loads = []
 
         # Maps class keys → attribute names for each object involved
@@ -65,8 +143,10 @@ class DecisionMaker:
                     current = getattr(airport, stock_attr)
                     capacity = getattr(aircraft, capacity_attr)
 
-                    use = max(0, min(capacity, current, wanted))
-
+                    if cls == CLASS_KEYS[0] or cls == CLASS_KEYS[1] or cls == CLASS_KEYS[2]:
+                        use = max(0, min(capacity, current, wanted))
+                    else:
+                        use = 0
                     setattr(pca, pca_attr, use)
                     setattr(airport, stock_attr, current - use)
 
@@ -91,10 +171,20 @@ class DecisionMaker:
         day, hour = decode_time(state.time)
         resp = HourRequestDto(day, hour)
         resp.flight_loads = loads
-        return resp
 
+        fixed_purchase = PerClassAmount()
+        fixed_purchase.first = 1 if state.time % 24 == 0 else 0  # ~Daily demand / 24
+        fixed_purchase.business = 1 if state.time % 24 == 0 else 0  # ~Daily demand / 24
+        fixed_purchase.premium_economy = 0  # ~Daily demand / 24
+        fixed_purchase.economy = 0  # ~Daily demand / 24
+
+
+        resp.kit_purchasing_orders = fixed_purchase
+
+        return resp
     
     
+    """
     
     """
     def naive_decision(self, state: State) -> HourRequestDto:
