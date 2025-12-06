@@ -45,14 +45,15 @@ class App:
             # main loop for every hour
             while self.state.time < end_time:
                 # 1. make a descision
-                decision = self.decisionMaker.empty_decision(self.state)
-                # decision = self.decisionMaker.naive_decision(self.state)
+                #decision = self.decisionMaker.empty_decision(self.state)
+                decision = self.decisionMaker.make_decision(self.state)
 
                 # print(decision)
 
                 penalty_no = 0
                 # 2. send the decision and get the next round
                 response = self.client.play_round(decision)
+                print(response['penalties'])
                 lastCost = response['totalCost']
 
                 penal = {}
