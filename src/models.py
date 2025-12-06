@@ -47,6 +47,17 @@ class Flight:
 
 
 @dataclass
+class PlannedFlight:
+    depart_code: str
+    arrival_code:str
+
+    scheduled_depart: int
+    scheduled_arrival: int
+
+    distance: int
+    flight_days: list[int]
+
+@dataclass
 class Airport:
     id: str
     code: str
@@ -77,5 +88,3 @@ class Airport:
     premium_economy_capacity: int
     economy_capacity: int
 
-
-# -- TEST CLASSES
