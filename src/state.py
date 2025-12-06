@@ -2,6 +2,10 @@ from typing import Dict
 from models import *
 from context import Context
 from utils import encode_time
+from models import Aircraft, Airport
+
+from inventory import InventoryManager
+from processing_queue import KitProcessingQueue
 
 """
 State object:
@@ -17,10 +21,43 @@ class State:
     flights_dict: Dict[str, Flight] = field(default_factory=dict)
     time: int = 0
     
-    def __post_init__(self):
-        pass
+    inventory_manager: Optional[InventoryManager] = None
+    processing_queue: Optional[KitProcessingQueue] = None
     
-    def update_state(self, response: dict):
+    def __post_init__(self):
+        self.inventory_manager = InventoryManager.from_airports(self.context.airport_dict)
+        
+    def complete_processing_tick(self) -> None:
+        """
+        Advance processing by one hour and move finished kits into inventory.
+        """
+        if not self.processing_queue or not self.inventory_manager:
+            return
+        violations = self.processing_queue.apply_tick(self.inventory_manager, hours=1)
+        if violations:
+            print("Processing violations:", violations)
+            
+    def _processing_times_for_airport(self, airport_code: str) -> Dict[str, int]:
+        airport = self.context.airport_dict.get(airport_code)
+        if not airport:
+            return {}
+        return {
+            "first": airport.first_processing_time,
+            "business": airport.business_processing_time,
+            "premiumEconomy": airport.premium_economy_processing_time,
+            "economy": airport.economy_processing_time,
+        }
+
+    def enqueue_kits_for_processing(self, airport_code: str, amounts: Dict[str, int]) -> None:
+        """
+        Call this when kits arrive at an airport; they will become available after processing time.
+        """
+        if not self.processing_queue:
+            return
+        processing_times = self._processing_times_for_airport(airport_code)
+        self.processing_queue.add_batch(airport_code, amounts, processing_times)
+    
+    def update_flights(self, response:dict):
         flights = response["flightUpdates"]
         for flight_entry in flights:
             # --- 1. Calculate Time ---
@@ -74,6 +111,11 @@ class State:
 
                 # Store the new flight
                 self.flights_dict[new_flight.flight_id] = new_flight
+    
+    def update_state(self, response: dict):
+        # update based on response
+        self.update_flights(response)
+        self.complete_processing_tick()
         
         # the state represents the next round (hour)        
         self.time += 1
