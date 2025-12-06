@@ -7,6 +7,7 @@ from api_client import ApiClient
 from utils import HourRequestDto, decode_time, encode_time
 from models import *
 from inventory import InventoryManager
+from processing_queue import KitProcessingQueue
 
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
@@ -18,6 +19,7 @@ class App:
     airport_dict: Dict[str, Airport] = field(default_factory=dict)
     flights_dict: Dict[str, Flight] = field(default_factory=dict)
     inventory_manager: Optional[InventoryManager] = None
+    processing_queue: Optional[KitProcessingQueue] = None
 
     def connect_api(self):
         load_dotenv()
@@ -42,6 +44,7 @@ class App:
         self.airport_dict = parser.parse_airports('../data/airports_with_stocks.csv')
 
         self.inventory_manager = InventoryManager.from_airports(self.airport_dict)
+        self.processing_queue = KitProcessingQueue()
 
         if self.inventory_manager:
             print("Initial inventories: ")
@@ -49,6 +52,36 @@ class App:
 
         #print(self.aircraft_dict)
         #print(self.airport_dict)
+
+    def _processing_times_for_airport(self, airport_code: str) -> Dict[str, int]:
+        airport = self.airport_dict.get(airport_code)
+        if not airport:
+            return {}
+        return {
+            "first": airport.first_processing_time,
+            "business": airport.business_processing_time,
+            "premiumEconomy": airport.premium_economy_processing_time,
+            "economy": airport.economy_processing_time,
+        }
+
+    def enqueue_kits_for_processing(self, airport_code: str, amounts: Dict[str, int]) -> None:
+        """
+        Call this when kits arrive at an airport; they will become available after processing time.
+        """
+        if not self.processing_queue:
+            return
+        processing_times = self._processing_times_for_airport(airport_code)
+        self.processing_queue.add_batch(airport_code, amounts, processing_times)
+
+    def complete_processing_tick(self) -> None:
+        """
+        Advance processing by one hour and move finished kits into inventory.
+        """
+        if not self.processing_queue or not self.inventory_manager:
+            return
+        violations = self.processing_queue.apply_tick(self.inventory_manager, hours=1)
+        if violations:
+            print("Processing violations:", violations)
 
     def update_flights(self, response):
         flights = response["flightUpdates"]
@@ -112,6 +145,9 @@ class App:
 
             while curr_time < stop_time:
                 day, hour = decode_time(curr_time)
+
+                # advance processing queue for one hour; finished kits return to inventory
+                self.complete_processing_tick()
 
                 hour_request = HourRequestDto(day, hour)
                 response = self.client.play_round(hour_request)
