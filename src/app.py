@@ -42,40 +42,34 @@ class App:
 
             end_time = 30*24
             lastCost = -1
+            totalPenalty = 0
             # main loop for every hour
             while self.state.time < end_time:
                 self.state.init_update_state()
                 # 1. make a descision
                 #decision = self.decisionMaker.empty_decision(self.state)
-                decision = self.decisionMaker.make_decision(self.state)
+                decision = self.decisionMaker.make_decision_petru(self.state)
 
                 # print(decision)
-
-                penalty_no = 0
                 # 2. send the decision and get the next round
                 response = self.client.play_round(decision)
                 #print(response['penalties'])
                 lastCost = response['totalCost']
-
                 penal = {}
-                for idx, penalty in enumerate(response['penalties']):
-                    keywords = {'Negative', 'unfulfilled', 'exceeds'}
-
-                    for keyword in keywords:
-                        if penalty['reason'].find(keyword) != -1:
-                            if keyword not in penal:
-                                penal[keyword] = 0
-                            penal[keyword] += 1
-
-                    penalty_no += 1
-                    print(idx, penalty['reason'])
+                for penalty in response['penalties']:
+                    totalPenalty += penalty['penalty']
+                    pen_code = penalty['code']
+                    
+                    if pen_code not in penal:
+                        penal[pen_code] = 0
+                        
+                    penal[pen_code] += 1
 
                 # 3. update the state with the next round
                 self.state.update_state(response)
 
-            print(f'Last Cost: {lastCost:,.2f}')
+            print(f'Last Cost: {lastCost:,.2f} Total penalty: {totalPenalty:,.2f}')
             print(penal)
-            print(penalty_no)
         except requests.exceptions.HTTPError as e:
             print(f"HTTP Error: {e.response.status_code} {e.response.reason}")
             print(e.response.json())
