@@ -23,13 +23,15 @@ def _class_caps(aircraft) -> Dict[str, int]:
 class DecisionMaker:
     context: Context
 
+    def __post_init__(self):
+        pass
+    
     def make_decision(self, state: State) -> HourRequestDto:
         """
         Naive decision: for CHECKED_IN flights, load up to min(demand, aircraft cap, available stock)
         and deduct from inventory immediately to keep state consistent.
         """
         day, hour = decode_time(state.time)
-
         inventory = state.inventory_manager
 
         flight_loads = []
@@ -47,7 +49,7 @@ class DecisionMaker:
             inv_record = inventory.get(origin)
             if not inv_record:
                 continue
-
+            
             aircraft = self.context.aircraft_dict.get(flight.aircraft_id)
             if not aircraft:
                 continue
@@ -59,6 +61,7 @@ class DecisionMaker:
                 demand = passengers.get(cls, 0)
                 cap = caps.get(cls, 0)
                 available = inv_record.available.get(cls, 0)
+                print(cls, flight.aircraft_id, available)
                 load = max(0, min(demand, cap, available))
                 if load > 0:
                     load_amounts[cls] = load
@@ -88,3 +91,55 @@ class DecisionMaker:
             state.sent_loads.update(sent_loads)
 
         return HourRequestDto(day, hour, flight_loads=flight_loads)
+    
+    def empty_decision(self, state: State) -> HourRequestDto:
+        day, hour  = decode_time(state.time)
+        return HourRequestDto(day, hour)
+    
+    def naive_decision(self, state: State) -> HourRequestDto:
+        loads = []
+
+        for fid in state.flights_dict:
+            flight = state.flights_dict[fid]
+
+            if flight.status == FlightStatus.CHECKED_IN:
+                pca = PerClassAmount()
+                origin = flight.origin_airport_id
+
+                invent_obj = state.inventory_manager.inventories[origin]
+
+                for cls in CLASS_KEYS:
+                    cnt = flight.passengers[cls]
+                    available = invent_obj.available[cls]
+
+                    use = min(cnt, available)
+
+                    match cls:
+                        case "first":
+                            pca.first = use
+                        case "business":
+                            pca.business = use
+                        case "premiumEconomy":
+                            pca.premium_economy = use
+                        case "economy":
+                            pca.economy = use
+
+                    invent_obj.available[cls] -= use
+
+                loads.append(FlightLoadDto(flight.flight_id, pca))
+
+            elif flight.status == FlightStatus.LANDED:
+                continue
+
+            else:
+                continue
+
+        # Moved OUTSIDE the loop
+        day, hour = decode_time(state.time)
+        resp = HourRequestDto(day, hour)
+        resp.flight_loads = loads
+        return resp
+
+                
+
+            
