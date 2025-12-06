@@ -117,7 +117,9 @@ class App:
                 response = self.client.play_round(hour_request)
                 
                 self.update_flights(response)
-                
+
+
+
                 # f = open('response.json', 'w')
                 # json_string = json.dumps(response, indent=3)
                 # f.write(json_string)
