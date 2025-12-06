@@ -34,7 +34,7 @@ class Parser:
             print(f"Error: Aircraft file not found at {path}")
         except Exception as e:
             print(f"Error parsing aircraft: {e}")
-            
+
         return aircraft_dict
 
     def parse_airports(self, path: str) -> Dict[str, Airport]:
