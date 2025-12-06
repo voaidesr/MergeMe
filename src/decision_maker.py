@@ -19,7 +19,6 @@ class DecisionMaker:
         return HourRequestDto(day, hour)
 
     #TODO
-    
     def make_decision_petru(self, state: State) -> HourRequestDto:
         loads = []
         for flight in state.flights_dict.values():
@@ -93,8 +92,82 @@ class DecisionMaker:
                     'HUB1'
                 )
         return resp
-    
-    
+
+    def make_decision_floron(self, state: State) -> HourRequestDto:
+        loads = []
+
+        # --- STRATEGY CONFIGURATION ---
+        SIMULATION_END_HOUR = 720  # 30 days * 24 hours
+        # Stop sending buffer stock 72 hours (3 days) before end
+        # This allows existing outstation stocks to be consumed by return flights
+        DRAIN_MODE_START_HOUR = 720
+
+        for flight in state.flights_dict.values():
+            if flight.status == FlightStatus.CHECKED_IN:
+                if flight.load:
+                    continue
+
+                pca = PerClassAmount()
+                origin_id = flight.origin_airport_id
+                aircraft_id = flight.aircraft_id
+                airport = self.context.airport_dict[origin_id]
+                aircraft = self.context.aircraft_dict[aircraft_id]
+
+                for cls in CLASS_KEYS:
+                    wanted = flight.passengers[cls]
+
+                    stock_attr = STOCK_FIELDS[cls]
+                    capacity_attr = CAPACITY_FIELDS[cls]
+                    pca_attr = PCA_FIELDS[cls]
+
+                    current = getattr(airport, stock_attr)
+                    capacity = getattr(aircraft, capacity_attr)
+
+                    bias_val = BIAS[cls]
+                    # --- OPTIMIZATION LOGIC ---
+                    if state.time >= DRAIN_MODE_START_HOUR:
+                        # End Game Phase: STRICT DEMAND
+                        # Only load exactly what is needed for passengers.
+                        # This stops accumulating stock at destinations and minimizes
+                        # kits in transit/processing when the game ends.
+                        demand = 0
+                    else:
+                        # Normal Phase: BUFFERING
+                        # Use the bias to push extra kits to outstations
+
+                        demand = wanted * bias_val
+
+                    # Calculate use, ensuring it's an integer
+                    use = int(max(0, min(capacity, current, demand)))
+                    # --------------------------
+
+                    setattr(pca, pca_attr, use)
+                    setattr(airport, stock_attr, current - use)
+
+                    flight.load[cls] = use
+                loads.append(FlightLoadDto(flight.flight_id, pca))
+
+            elif flight.status == FlightStatus.LANDED:
+                if not flight.load:
+                    continue
+                for cls in CLASS_KEYS:
+                    state.inventory.insert_processing(
+                        state.time,
+                        flight.load[cls],
+                        cls,
+                        flight.destination_airport_id
+                    )
+                flight.load = {}
+
+            elif flight.status == FlightStatus.SCHEDULED:
+                continue
+
+        # send stuff
+        day, hour = decode_time(state.time)
+        resp = HourRequestDto(day, hour)
+        resp.flight_loads = loads
+
+        return resp
     
     """
     def make_decision_floron(self, state: State) -> HourRequestDto:

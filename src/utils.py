@@ -33,10 +33,10 @@ RLT = {
 }
 
 BIAS = {
-    "first": 0 / 100,
-    "business": 50 / 100,
-    "premiumEconomy": 100 / 100,
-    "economy": 100 / 100,
+    "first": 100 / 100,
+    "business": 100 / 100,
+    "premiumEconomy": 0 / 100,
+    "economy": 0 / 100,
 }
 
 def encode_time(days: int, hours: int) -> int:

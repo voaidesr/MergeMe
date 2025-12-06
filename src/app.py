@@ -43,19 +43,20 @@ class App:
             end_time = 30*24
             lastCost = -1
             totalPenalty = 0
+            penal = {}
             # main loop for every hour
             while self.state.time < end_time:
                 self.state.init_update_state()
                 # 1. make a descision
                 #decision = self.decisionMaker.empty_decision(self.state)
-                decision = self.decisionMaker.make_decision_petru(self.state)
+                decision = self.decisionMaker.make_decision_floron(self.state)
 
                 # print(decision)
                 # 2. send the decision and get the next round
                 response = self.client.play_round(decision)
                 #print(response['penalties'])
                 lastCost = response['totalCost']
-                penal = {}
+
                 for penalty in response['penalties']:
                     totalPenalty += penalty['penalty']
                     pen_code = penalty['code']
@@ -67,6 +68,7 @@ class App:
 
                 # 3. update the state with the next round
                 self.state.update_state(response)
+                print(response)
 
             print(f'Last Cost: {lastCost:,.2f} Total penalty: {totalPenalty:,.2f}')
             print(penal)
