@@ -7,6 +7,7 @@ from api_client import ApiClient
 from utils import HourRequestDto, decode_time, encode_time
 from models import *
 from inventory import InventoryManager
+from processing_queue import KitProcessingQueue
 
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
@@ -18,6 +19,7 @@ class App:
     airport_dict: Dict[str, Airport] = field(default_factory=dict)
     flights_dict: Dict[str, Flight] = field(default_factory=dict)
     inventory_manager: Optional[InventoryManager] = None
+    processing_queue: Optional[KitProcessingQueue] = None
 
     def connect_api(self):
         load_dotenv()
@@ -26,22 +28,23 @@ class App:
 
         if not API_KEY:
             raise ValueError("API_KEY not found in .env file or environment variables.")
-        
+
         # play with the api
-        self.client = ApiClient(base_url=BASE_URL, api_key=API_KEY)    
-        
-        
+        self.client = ApiClient(base_url=BASE_URL, api_key=API_KEY)
+
+
     def initialize(self):
         # Connect the api
         self.connect_api()
-        
+
         # Example of how you might use the parse methods
         parser = Parser()
-        
+
         self.aircraft_dict = parser.parse_aircraft('../data/aircraft_types.csv')
         self.airport_dict = parser.parse_airports('../data/airports_with_stocks.csv')
 
         self.inventory_manager = InventoryManager.from_airports(self.airport_dict)
+        self.processing_queue = KitProcessingQueue()
 
         if self.inventory_manager:
             print("Initial inventories: ")
@@ -50,44 +53,74 @@ class App:
         #print(self.aircraft_dict)
         #print(self.airport_dict)
 
+    def _processing_times_for_airport(self, airport_code: str) -> Dict[str, int]:
+        airport = self.airport_dict.get(airport_code)
+        if not airport:
+            return {}
+        return {
+            "first": airport.first_processing_time,
+            "business": airport.business_processing_time,
+            "premiumEconomy": airport.premium_economy_processing_time,
+            "economy": airport.economy_processing_time,
+        }
+
+    def enqueue_kits_for_processing(self, airport_code: str, amounts: Dict[str, int]) -> None:
+        """
+        Call this when kits arrive at an airport; they will become available after processing time.
+        """
+        if not self.processing_queue:
+            return
+        processing_times = self._processing_times_for_airport(airport_code)
+        self.processing_queue.add_batch(airport_code, amounts, processing_times)
+
+    def complete_processing_tick(self) -> None:
+        """
+        Advance processing by one hour and move finished kits into inventory.
+        """
+        if not self.processing_queue or not self.inventory_manager:
+            return
+        violations = self.processing_queue.apply_tick(self.inventory_manager, hours=1)
+        if violations:
+            print("Processing violations:", violations)
+
     def update_flights(self, response):
         flights = response["flightUpdates"]
         for flight_entry in flights:
             # --- 1. Calculate Time ---
             departure_days_elapsed = flight_entry["departure"]["day"] - 1
             arrival_days_elapsed = flight_entry["arrival"]["day"] - 1
-            
+
             departure_time = encode_time(
                 days=departure_days_elapsed,
                 hours=flight_entry["departure"]["hour"]
             )
-            
+
             arrival_time = encode_time(
                 days=arrival_days_elapsed,
                 hours=flight_entry["arrival"]["hour"]
             )
-            
+
             # --- 2. Convert Status and Get Aircraft ID ---
             status_enum = FlightStatus[flight_entry["eventType"]]
             flight_id = flight_entry["flightId"]
-            
+
             aircraft_id = ''
             for id in self.aircraft_dict:
                 if flight_entry["aircraftType"] ==  self.aircraft_dict[id]:
                     aircraft_id = id
                     break
-            
+
             # --- 3. Check for Existing Flight and Update/Create ---
             if flight_id in self.flights_dict:
                 existing_flight = self.flights_dict[flight_id]
-                
+
                 # Typically, only certain attributes are updated, like status, times, and passengers.
                 # We assume flight number, airport IDs, and aircraft ID remain constant in an update.
                 existing_flight.status = status_enum
                 existing_flight.departure = departure_time
                 existing_flight.arrival = arrival_time
                 existing_flight.passengers = flight_entry["passengers"]
-            
+
             else:
                 # Flight does not exist: Create and store a new Flight object
                 new_flight = Flight(
@@ -101,39 +134,43 @@ class App:
                     passengers=flight_entry["passengers"],
                     aircraft_id = aircraft_id # Link to the aircraft ID
                 )
-                
+
                 # Store the new flight
                 self.flights_dict[new_flight.flight_id] = new_flight
 
-    def run(self):  
+    def run(self):
         try:
             self.client.start_session()
-            stop_time, curr_time = 1, 0
-            
+            stop_time, curr_time = 24 * 29 + 24, 0
+
             while curr_time < stop_time:
                 day, hour = decode_time(curr_time)
-                
+
+                # advance processing queue for one hour; finished kits return to inventory
+                self.complete_processing_tick()
+
                 hour_request = HourRequestDto(day, hour)
                 response = self.client.play_round(hour_request)
-                
+
                 self.update_flights(response)
-
-
 
                 # f = open('response.json', 'w')
                 # json_string = json.dumps(response, indent=3)
                 # f.write(json_string)
                 # f.close()
                 # print(response["day"], response['hour'])
-                
+
                 print(f'-------------TIME {curr_time}---------------')
                 for idx, flight_id in enumerate(self.flights_dict):
                     print(idx, self.flights_dict[flight_id].status)
-                
+
                 curr_time += 1
+
 
         except requests.exceptions.HTTPError as e:
             print(f"HTTP Error: {e.response.status_code} {e.response.reason}")
             print(e.response.json())
         except Exception as e:
             print(f"Error parsing airports: {e}")
+        finally:
+            self.client.end_session()
