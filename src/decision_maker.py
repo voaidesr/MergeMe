@@ -6,6 +6,7 @@ from models import *
 from utils import *
 from state import State
 
+
 @dataclass
 class DecisionMaker:
     context: Context
@@ -13,12 +14,10 @@ class DecisionMaker:
     def __post_init__(self):
         pass
 
-
     def empty_decision(self, state: State) -> HourRequestDto:
-        day, hour  = decode_time(state.time)
+        day, hour = decode_time(state.time)
         return HourRequestDto(day, hour)
 
-    #TODO
     
     def make_decision_petru(self, state: State) -> HourRequestDto:
         loads = []
@@ -75,13 +74,13 @@ class DecisionMaker:
         resp = HourRequestDto(day, hour)
         resp.flight_loads = loads
         
-        if state.time % 2 == 0:
+        if state.time < 5 * 24 == 0:
             # print('Buying')
             pca = PerClassAmount()
-            pca.economy = 30
-            pca.business = 17
-            pca.first = 2
-            pca.premium_economy = 10
+            pca.economy = 60
+            pca.premium_economy = 25
+            pca.business = 18
+            pca.first = 6
             resp.kit_purchasing_orders = pca
             
             for cls, attr_name in PCA_FIELDS.items():
@@ -92,10 +91,11 @@ class DecisionMaker:
                     cls,
                     'HUB1'
                 )
+            resp.kit_purchasing_orders = pca    
+            
+            
         return resp
-    
-    
-    
+
     """
     def make_decision_floron(self, state: State) -> HourRequestDto:
         loads = []
@@ -185,7 +185,7 @@ class DecisionMaker:
     
     
     """
-    
+
     """
     def naive_decision(self, state: State) -> HourRequestDto:
         loads = []
@@ -247,7 +247,3 @@ class DecisionMaker:
 
         return resp
     """
-
-
-
-
