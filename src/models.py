@@ -48,7 +48,7 @@ class Flight:
 
     aircraft_id: str
 
-    load: Optional[dict[str, int]] = None
+    load: dict[str, int] = field(default_factory=dict)
 
 
 @dataclass

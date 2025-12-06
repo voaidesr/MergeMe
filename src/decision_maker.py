@@ -31,10 +31,61 @@ class DecisionMaker:
 
     #TODO
     def make_decision(self, state: State) -> HourRequestDto:
-        #CHECKED_IN
+        # TODO: free processed kits from process_dict
 
-        #LANDED
-        pass
+        loads = []
+
+        for fid in state.flights_dict:
+            flight = state.flights_dict[fid]
+
+            if flight.status == FlightStatus.CHECKED_IN:
+                pca = PerClassAmount()
+
+                origin = flight.origin_airport_id
+
+                for cls in CLASS_KEYS:
+                    cnt = flight.passengers[cls]
+
+                    # TODO: implement formula to calculate how many kits to load
+                    #available = invent_obj.available[cls]
+                    #use = min(cnt, available)
+                    use = cnt
+
+                    match cls:
+                        case "first":
+                            pca.first = use
+
+                        case "business":
+                            pca.business = use
+
+                        case "premiumEconomy":
+                            pca.premium_economy = use
+
+                        case "economy":
+                            pca.economy = use
+
+                    flight.load[cls] = use
+
+                    # TODO: decrease airport inventory
+                    #invent_obj.available[cls] -= use
+
+                loads.append(FlightLoadDto(flight.flight_id, pca))
+
+            elif flight.status == FlightStatus.LANDED:
+                # TODO: enque plane kits into processing_dict
+                # queue[actual_hour + processing_time] = (number_of_kit, airport_name, class_type)
+                continue
+            elif flight.status == FlightStatus.SCHEDULED:
+                continue
+
+
+        # TODO: buy order logic
+
+        day, hour = decode_time(state.time)
+        resp = HourRequestDto(day, hour)
+        resp.flight_loads = loads
+
+        return resp
     """
     def naive_decision(self, state: State) -> HourRequestDto:
         loads = []
