@@ -9,6 +9,7 @@ class FlightStatus(Enum):
     SCHEDULED = 1
     CHECKED_IN = 2
     LANDED = 3
+    FLYING = 4
 
 
 @dataclass

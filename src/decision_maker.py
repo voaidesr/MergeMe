@@ -31,53 +31,70 @@ class DecisionMaker:
 
     #TODO
     def make_decision(self, state: State) -> HourRequestDto:
-        # TODO: free processed kits from process_dict
-
         loads = []
 
         for fid in state.flights_dict:
             flight = state.flights_dict[fid]
 
             if flight.status == FlightStatus.CHECKED_IN:
+                if flight.load:
+                    continue
                 pca = PerClassAmount()
 
-                origin = flight.origin_airport_id
 
                 for cls in CLASS_KEYS:
-                    cnt = flight.passengers[cls]
+                    wanted = flight.passengers[cls]
 
                     # TODO: implement formula to calculate how many kits to load
                     #available = invent_obj.available[cls]
-                    #use = min(cnt, available)
-                    use = cnt
+                    #use = max(0, min(wanted, current, capacity))
 
+                    origin_id = flight.origin_airport_id
+                    aircraft_id = flight.aircraft_id
+                    aicraft_capacity = self.context.aircraft_dict[aircraft_id]
                     match cls:
                         case "first":
+                            current = self.context.airport_dict[origin_id].first_stock
+                            capacity = aicraft_capacity.first_class_kits_capacity
+                            use = max(0, min(capacity, current, wanted))
                             pca.first = use
+                            self.context.airport_dict[origin_id].first_stock -= use
 
                         case "business":
+                            current = self.context.airport_dict[origin_id].business_stock
+                            capacity = aicraft_capacity.business_kits_capacity
+                            use = max(0, min(capacity, current, wanted))
                             pca.business = use
+                            self.context.airport_dict[origin_id].business_stock -= use
 
                         case "premiumEconomy":
+                            current = self.context.airport_dict[origin_id].premium_economy_stock
+                            capacity = aicraft_capacity.premium_economy_kits_capacity
+                            use = max(0, min(capacity, current, wanted))
                             pca.premium_economy = use
+                            self.context.airport_dict[origin_id].premium_economy_stock -= use
 
                         case "economy":
+                            current = self.context.airport_dict[origin_id].economy_stock
+                            capacity = aicraft_capacity.economy_kits_capacity
+                            use = max(0, min(capacity, current, wanted))
                             pca.economy = use
+                            self.context.airport_dict[origin_id].economy_stock -= use
 
                     flight.load[cls] = use
-
-                    # TODO: decrease airport inventory
-                    #invent_obj.available[cls] -= use
 
                 loads.append(FlightLoadDto(flight.flight_id, pca))
 
             elif flight.status == FlightStatus.LANDED:
-                # TODO: enque plane kits into processing_dict
-                # queue[actual_hour + processing_time] = (number_of_kit, airport_name, class_type)
-                continue
+                if not flight.load:
+                    continue
+                for cls in CLASS_KEYS:
+                    state.inventory.insert_future(state.time, flight.load[cls], cls, flight.destination_airport_id)
+
+                flight.load = {}
+
             elif flight.status == FlightStatus.SCHEDULED:
                 continue
-
 
         # TODO: buy order logic
 

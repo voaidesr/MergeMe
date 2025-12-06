@@ -3,6 +3,7 @@ from models import *
 from context import Context
 from utils import encode_time
 from models import Aircraft, Airport
+from inventory import Inventory
 
 """
 State object:
@@ -17,17 +18,9 @@ class State:
     context: Context
     flights_dict: Dict[str, Flight] = field(default_factory=dict)
     time: int = 0
-    # maps flight to what was loaded in that flight, so we can proccss at landing
-    sent_loads: Dict[str, Dict[str, int]] = field(default_factory=dict)
-
 
     def __post_init__(self):
-        pass
-
-    def complete_processing_tick(self) -> None:
-        """
-        Advance processing by one hour and move finished kits into inventory.
-        """
+        self.inventory: Inventory = Inventory(self.context)
 
     def update_flights(self, response:dict):
         flights = response["flightUpdates"]
@@ -89,10 +82,12 @@ class State:
     def get_penalties(self, response):
         return response['penalties']
 
+    def init_update_state(self):
+        self.inventory.process(self.time)
+
     def update_state(self, response: dict):
         # update based on response
         self.update_flights(response)
-        self.complete_processing_tick()
 
         # the state represents the next round (hour)
         self.time += 1
