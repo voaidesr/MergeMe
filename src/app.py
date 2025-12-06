@@ -18,17 +18,17 @@ class App:
     context: Context = field(default_factory=Context)
     state: State = field(init=False)
     decisionMaker: DecisionMaker = field(init=False)
-    
+
     def __post_init__(self):
         # All share the same context reference
         self.state = State(self.context)
         self.decisionMaker = DecisionMaker(self.context)
-    
+
     def connect_api(self):
         load_dotenv()
         BASE_URL = os.getenv("BASE_URL", "http://localhost:8080")
         API_KEY = os.getenv("API_KEY")
-        
+
         if not API_KEY:
             raise ValueError("API_KEY not found in .env file or environment variables.")
         # play with the api
@@ -39,7 +39,7 @@ class App:
         self.connect_api()
         try:
             self.client.start_session()
-            
+
             end_time = 30*24
             lastCost = -1
             # main loop for every hour
@@ -47,7 +47,7 @@ class App:
                 # 1. make a descision
                 # decision = self.decisionMaker.empty_decision(self.state)
                 decision = self.decisionMaker.naive_decision(self.state)
-                
+
                 # print(decision)
                 
                 penalty_no = 0
