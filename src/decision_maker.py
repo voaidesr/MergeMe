@@ -42,9 +42,7 @@ class DecisionMaker:
                     current = getattr(airport, stock_attr)
                     capacity = getattr(aircraft, capacity_attr)
 
-                    
-                    # bias = 30
-                    use = max(0, min(capacity, current, wanted * (1-BIAS[cls])))
+                    use = max(0, min(capacity, current, wanted * BIAS[cls]))
                     # use = max(0, min(capacity, wanted))
                     # use = 0
 
@@ -73,26 +71,6 @@ class DecisionMaker:
         day, hour = decode_time(state.time)
         resp = HourRequestDto(day, hour)
         resp.flight_loads = loads
-        
-        if state.time < 5 * 24 == 0:
-            # print('Buying')
-            pca = PerClassAmount()
-            pca.economy = 60
-            pca.premium_economy = 25
-            pca.business = 18
-            pca.first = 6
-            resp.kit_purchasing_orders = pca
-            
-            for cls, attr_name in PCA_FIELDS.items():
-                quantity = getattr(pca, attr_name)  # correctly uses 'premium_economy'
-                state.inventory.insert_buying(
-                    state.time,
-                    quantity,
-                    cls,
-                    'HUB1'
-                )
-            resp.kit_purchasing_orders = pca
-
 
         return resp
 
@@ -171,7 +149,62 @@ class DecisionMaker:
         resp.flight_loads = loads
 
         return resp
-    
+
+    def make_decision(self, state: State) -> HourRequestDto:
+        loads = []
+        for flight in state.flights_dict.values():
+            if flight.status == FlightStatus.CHECKED_IN:
+                if flight.load:
+                    continue
+
+                pca = PerClassAmount()
+                origin_id = flight.origin_airport_id
+                aircraft_id = flight.aircraft_id
+                airport = self.context.airport_dict[origin_id]
+                aircraft = self.context.aircraft_dict[aircraft_id]
+
+                for cls in CLASS_KEYS:
+                    wanted = flight.passengers[cls]
+
+                    stock_attr = STOCK_FIELDS[cls]
+                    capacity_attr = CAPACITY_FIELDS[cls]
+                    pca_attr = PCA_FIELDS[cls]
+
+                    current = getattr(airport, stock_attr)
+                    capacity = getattr(aircraft, capacity_attr)
+
+                    use = max(0, min(capacity, current, wanted * BIAS[cls]))
+                    # use = max(0, min(capacity, wanted))
+                    # use = 0
+
+                    setattr(pca, pca_attr, use)
+                    setattr(airport, stock_attr, current - use)
+
+                    flight.load[cls] = use
+                loads.append(FlightLoadDto(flight.flight_id, pca))
+
+            elif flight.status == FlightStatus.LANDED:
+                if not flight.load:
+                    continue
+                for cls in CLASS_KEYS:
+                    state.inventory.insert_processing(
+                        state.time,
+                        flight.load[cls],
+                        cls,
+                        flight.destination_airport_id
+                    )
+                flight.load = {}
+
+            elif flight.status == FlightStatus.SCHEDULED:
+                continue
+
+        # send stuff
+        day, hour = decode_time(state.time)
+        resp = HourRequestDto(day, hour)
+        resp.flight_loads = loads
+
+        return resp
+
     """
     def make_decision_floron(self, state: State) -> HourRequestDto:
         loads = []

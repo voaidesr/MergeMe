@@ -51,7 +51,7 @@ class App:
                 self.state.init_update_state()
                 # 1. make a descision
                 #decision = self.decisionMaker.empty_decision(self.state)
-                decision = self.decisionMaker.make_decision_petru(self.state)
+                decision = self.decisionMaker.make_decision(self.state)
 
                 # print(decision)
                 # 2. send the decision and get the next round
