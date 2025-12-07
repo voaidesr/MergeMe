@@ -41,4 +41,33 @@ On the provided that, we can see the utilisation faction of kits (passenger=pax/
 
 The average and median values of needed kits can be found [here](./statistics/flight_kits_vs_capacity_summary.csv)
 
+## Frontend (Flight Rotables Cockpit)
+
+An interactive React + TypeScript + Tailwind + shadcn/ui dashboard lives in `frontend/`. It ships a hackathon-ready control center for the Flight Rotables Optimization stack, including dashboards, flights drill-down, airport inventory, and a strategy tuning lab with mock data and API stubs ready to swap to real endpoints.
+
+### Quick start
+
+```bash
+cd frontend
+npm install
+npm run dev
+# npm run build to verify prod bundle
+```
+
+### What’s inside
+
+- React Router for navigation, TanStack Query for data fetching, Recharts for charts, Radix/shadcn components for UI primitives, Tailwind for styling with light/dark theme toggle.
+- `src/lib/mock-data.ts` and `src/lib/api.ts` provide mock payloads and delay-simulated calls; wire them to real backend endpoints when available.
+- Shared layout components under `src/components/layout` create the persistent sidebar + top bar shell. UI primitives live in `src/components/ui`.
+- Feature folders:
+  - `src/features/dashboard` — KPI strip, cost/penalty time series, penalty breakdown donut, network snapshot, and strategy summary.
+  - `src/features/flights` — filter bar, sortable table, and a slide-over flight detail view with per-cabin service stats.
+  - `src/features/airports` — airport list, stock/capacity gauges, trend and flow charts, and upcoming flights near each station.
+  - `src/features/strategy` — tuning playground with sliders/toggles for heuristics, simulation runner, comparison KPIs, delta chart, and explainability notes.
+
+### Notes for backend integration
+
+- Replace functions in `src/lib/api.ts` with real HTTP calls; maintain the same shapes defined in `src/lib/types.ts`.
+- React Query keys are already scoped per scenario/filters; hook your fetchers into those spots for cache-aware updates.
+- Mock data uses round-level metrics; align your API responses to the same dimensions to reuse charts with minimal changes.
 
