@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from state import State
 from context import Context
 from decision_maker import DecisionMaker
+from utils import encode_time
 
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data"
@@ -49,18 +50,19 @@ class App:
             while self.state.time < end_time:
                 self.state.init_update_state()
                 # 1. make a descision
-                # decision = self.decisionMaker.empty_decision(self.state)
-                decision = self.decisionMaker.make_decision_petru(self.state)
+                #decision = self.decisionMaker.empty_decision(self.state)
+                decision = self.decisionMaker.make_decision(self.state)
 
                 # print(decision)
                 # 2. send the decision and get the next round
                 response = self.client.play_round(decision)
-                # print(response['penalties'])
-                lastCost = response["totalCost"]
-                for penalty in response["penalties"]:
-                    totalPenalty += penalty["penalty"]
-                    pen_code = penalty["code"]
+                #print(response['penalties'])
+                lastCost = response['totalCost']
 
+                for penalty in response['penalties']:
+                    totalPenalty += penalty['penalty']
+                    pen_code = penalty['code']
+                    
                     if pen_code not in penal:
                         penal[pen_code] = 0
 

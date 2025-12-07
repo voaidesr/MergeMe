@@ -1,3 +1,4 @@
+
 from typing import Tuple
 # CONSTANTS
 
@@ -32,10 +33,10 @@ RLT = {
 }
 
 BIAS = {
-    "first": 0 / 100,
-    "business": 0 / 100,
-    "premiumEconomy": 100 / 100,
-    "economy": 100 / 100,
+    "first": 100 / 100,
+    "business": 100 / 100,
+    "premiumEconomy": 0 / 100,
+    "economy": 0 / 100,
 }
 
 
@@ -45,3 +46,4 @@ def encode_time(days: int, hours: int) -> int:
 
 def decode_time(time: int) -> Tuple[int, int]:
     return (time // 24, time % 24)
+
