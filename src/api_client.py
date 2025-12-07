@@ -1,5 +1,8 @@
 import requests
 from models import HourRequestDto
+
+# ApiClient = interact with the API, start/end sessions, play a round
+
 class ApiClient:
     def __init__(self, base_url: str, api_key: str):
         self.base_url = base_url
@@ -30,7 +33,9 @@ class ApiClient:
 
         request_body = hour_request.to_dict()
 
-        response = self._session.post(url, headers=self._get_headers(), json=request_body)
+        response = self._session.post(
+            url, headers=self._get_headers(), json=request_body
+        )
         response.raise_for_status()
         return response.json()
 

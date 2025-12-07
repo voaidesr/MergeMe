@@ -13,6 +13,7 @@ Data that changes every hour.
 - Etc.
 """
 
+
 @dataclass
 class State:
     context: Context
@@ -22,7 +23,7 @@ class State:
     def __post_init__(self):
         self.inventory: Inventory = Inventory(self.context)
 
-    def update_flights(self, response:dict):
+    def update_flights(self, response: dict):
         flights = response["flightUpdates"]
         for flight_entry in flights:
             # --- 1. Calculate Time ---
@@ -30,13 +31,11 @@ class State:
             arrival_days_elapsed = flight_entry["arrival"]["day"] - 1
 
             departure_time = encode_time(
-                days=departure_days_elapsed,
-                hours=flight_entry["departure"]["hour"]
+                days=departure_days_elapsed, hours=flight_entry["departure"]["hour"]
             )
 
             arrival_time = encode_time(
-                days=arrival_days_elapsed,
-                hours=flight_entry["arrival"]["hour"]
+                days=arrival_days_elapsed, hours=flight_entry["arrival"]["hour"]
             )
 
             # --- 2. Convert Status and Get Aircraft ID ---
@@ -45,8 +44,12 @@ class State:
 
             aircraft_id = flight_entry.get("aircraftType", "")
 
-            origin_code = self.context.airport_id_to_code.get(flight_entry["originAirport"], flight_entry["originAirport"])
-            dest_code = self.context.airport_id_to_code.get(flight_entry["destinationAirport"], flight_entry["destinationAirport"])
+            origin_code = self.context.airport_id_to_code.get(
+                flight_entry["originAirport"], flight_entry["originAirport"]
+            )
+            dest_code = self.context.airport_id_to_code.get(
+                flight_entry["destinationAirport"], flight_entry["destinationAirport"]
+            )
 
             # --- 3. Check for Existing Flight and Update/Create ---
             if flight_id in self.flights_dict:
@@ -72,16 +75,15 @@ class State:
                     departure=departure_time,
                     arrival=arrival_time,
                     passengers=flight_entry["passengers"],
-                    aircraft_id = aircraft_id,
-                    distance= flight_entry["distance"]
+                    aircraft_id=aircraft_id,
+                    distance=flight_entry["distance"],
                 )
 
                 # Store the new flight
                 self.flights_dict[new_flight.flight_id] = new_flight
 
-
     def get_penalties(self, response):
-        return response['penalties']
+        return response["penalties"]
 
     def init_update_state(self):
         self.inventory.process(self.time)

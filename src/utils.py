@@ -1,4 +1,3 @@
-
 from typing import Tuple
 # CONSTANTS
 
@@ -46,4 +45,3 @@ def encode_time(days: int, hours: int) -> int:
 
 def decode_time(time: int) -> Tuple[int, int]:
     return (time // 24, time % 24)
-
