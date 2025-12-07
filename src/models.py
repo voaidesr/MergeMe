@@ -33,27 +33,24 @@ class Aircraft:
 @dataclass
 class Flight:
     status: FlightStatus
-    
+
     flight_number: str
     flight_id: str
 
     origin_airport_id: str
     destination_airport_id: str
 
-    # hour + day * 24
     departure: int
     arrival: int
 
-    # keys: first, business, premiumEconomy, economy
     passengers: dict[str, int]
 
     aircraft_id: str
-    
+
     distance: int
 
     load: dict[str, int] = field(default_factory=dict)
 
-    
 
 @dataclass
 class PlannedFlight:

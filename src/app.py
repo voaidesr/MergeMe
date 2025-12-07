@@ -9,11 +9,15 @@ from dataclasses import dataclass
 from state import State
 from context import Context
 from decision_maker import DecisionMaker
-from utils import encode_time
+
+"""
+Main app class.
+"""
 
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data"
 )
+
 
 @dataclass
 class App:
@@ -22,7 +26,7 @@ class App:
     decisionMaker: DecisionMaker = field(init=False)
 
     def __post_init__(self):
-        # All share the same context reference
+        # all share the same context reference
         self.state = State(self.context)
         self.decisionMaker = DecisionMaker(self.context)
 
@@ -33,6 +37,7 @@ class App:
 
         if not API_KEY:
             raise ValueError("API_KEY not found in .env file or environment variables.")
+
         # play with the api
         self.client = ApiClient(base_url=BASE_URL, api_key=API_KEY)
 
@@ -42,27 +47,22 @@ class App:
         try:
             self.client.start_session()
 
-            end_time = 30 * 24
-            lastCost = -1
-            totalPenalty = 0
+            end_time, totalPenalty = 30 * 24, 0
             penal = {}
+
             # main loop for every hour
             while self.state.time < end_time:
                 self.state.init_update_state()
                 # 1. make a descision
-                #decision = self.decisionMaker.empty_decision(self.state)
                 decision = self.decisionMaker.make_decision(self.state)
 
-                # print(decision)
                 # 2. send the decision and get the next round
                 response = self.client.play_round(decision)
-                #print(response['penalties'])
-                lastCost = response['totalCost']
 
-                for penalty in response['penalties']:
-                    totalPenalty += penalty['penalty']
-                    pen_code = penalty['code']
-                    
+                for penalty in response["penalties"]:
+                    totalPenalty += penalty["penalty"]
+                    pen_code = penalty["code"]
+
                     if pen_code not in penal:
                         penal[pen_code] = 0
 
@@ -71,14 +71,16 @@ class App:
                 # 3. update the state with the next round
                 self.state.update_state(response)
 
+            lastCost = response["totalCost"]
             print(f"Last Cost: {lastCost:,.2f} Total penalty: {totalPenalty:,.2f}")
-            print(penal)
+            print(f"Penalties are: {penal}")
         except requests.exceptions.HTTPError as e:
             print(f"HTTP Error: {e.response.status_code} {e.response.reason}")
             print(e.response.json())
         except Exception as e:
             print(f"Exception: {e}")
         finally:
+            # warning: session closes automatically on the last day
             MAX_END_TIME = 24 * 30
             if self.state.time < MAX_END_TIME:
                 self.client.end_session()
