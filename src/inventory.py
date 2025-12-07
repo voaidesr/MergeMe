@@ -33,6 +33,7 @@ class Inventory:
 
         future_hour = hour + time_delta
 
+
         if future_hour not in self.processing_dict:
             self.processing_dict[future_hour] = []
         self.processing_dict[future_hour].append((quantity, kit_type, airport_id))
