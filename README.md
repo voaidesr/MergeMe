@@ -23,11 +23,22 @@ cp .env.example .env
 
 Inside the `.env` file, set the desired API key and the url base.
 
-## Structure
+## Architecture
 
-- `src/main.py` - I envision this to be the entry point, the script in which we call the other modules and implement the final product. I want us to work as modularly as possible so that we can turn this into an api more easily later.
-- `src/utils` - Module with data transfer objects necessary for the request
-- `src/api_client` - Module that implements the `ApiClient` class with all the required methods.
+Here you can see the diagrams presenting the general logic and flow of the algorithm.
+
+### Problem Modeling
+
+![](./img/SAP_7Dec_Classes.drawio-2.png)
+
+### Maintaing the inventory
+
+![](./img/Inventory.png)
+
+### Making Decisions
+
+![](./img/SAP_7DEC_Flow.drawio.png)
+
 
 ## Statistics
 
@@ -43,7 +54,7 @@ The average and median values of needed kits can be found [here](./statistics/fl
 
 ## Frontend (Flight Rotables Cockpit)
 
-An interactive React + TypeScript + Tailwind + shadcn/ui dashboard lives in `frontend/`. It ships a hackathon-ready control center for the Flight Rotables Optimization stack, including dashboards, flights drill-down, airport inventory, and a strategy tuning lab with mock data and API stubs ready to swap to real endpoints.
+An interactive React + TypeScript + Tailwind + shadcn/ui dashboard lives in `frontend/`. It ships a control center for the Flight Rotables Optimization stack, including dashboards, flights drill-down, airport inventory, and a strategy tuning lab with mock data and API stubs ready to swap to real endpoints.
 
 ### Quick start
 
@@ -64,10 +75,4 @@ npm run dev
   - `src/features/flights` — filter bar, sortable table, and a slide-over flight detail view with per-cabin service stats.
   - `src/features/airports` — airport list, stock/capacity gauges, trend and flow charts, and upcoming flights near each station.
   - `src/features/strategy` — tuning playground with sliders/toggles for heuristics, simulation runner, comparison KPIs, delta chart, and explainability notes.
-
-### Notes for backend integration
-
-- Replace functions in `src/lib/api.ts` with real HTTP calls; maintain the same shapes defined in `src/lib/types.ts`.
-- React Query keys are already scoped per scenario/filters; hook your fetchers into those spots for cache-aware updates.
-- Mock data uses round-level metrics; align your API responses to the same dimensions to reuse charts with minimal changes.
 
