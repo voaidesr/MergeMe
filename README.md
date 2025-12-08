@@ -1,5 +1,7 @@
 # Flight Rotables Optimisation
 
+![Award](https://img.shields.io/badge/Award-2nd_Place_Winner-silver?style=for-the-badge&logo=trophy)
+
 The link to the repo containing the challenge can be found [here](https://github.com/pradu3/HackitAll2025).
 
 ## Setup
